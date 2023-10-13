@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="flowsFlow" doc:id="99220bc8-c4c7-4cd5-bb81-5efe2decfd51" >
+		<http:listener doc:name="Listener" doc:id="32f1ce9b-7b9f-45e8-9db4-abdf8917772c" config-ref="HTTP_Listener_config" path="/flowscope/{userId}"/>
+		<set-payload value='#[{&#10;	"name": "Ritwik"&#10;}]' doc:name="Set Payload" doc:id="35b4eca6-7db2-4d92-a3c7-6662d3259d7b" />
+		<set-variable value="test" doc:name="Set Variable" doc:id="dd8905ec-d0b6-479c-87b1-ffd89ef35222" variableName="test"/>
+		<logger level="INFO" doc:name="First Logger" doc:id="65739735-e99c-4ada-89ae-b025b1cc423f" message="First Logger"/>
+		<http:request method="POST" doc:name="Request" doc:id="dbe76ae0-9b43-4f6a-9533-c73afcf4c497" config-ref="HTTP_Request_configuration" path="/childflow">
+			<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+		</http:request>
+		<logger level="INFO" doc:name="Third Logger" doc:id="99f66f26-1132-49bb-aca1-2ae0392eed9f" message="Third Logger"/>
+	</flow>
+	<flow name="flowsFlow1" doc:id="7b20439a-63b1-473e-8f00-7e5015c2742d" >
+		<http:listener doc:name="Listener" doc:id="8bd085c7-3f82-4cf5-afe7-9cf12db6aeaa" config-ref="HTTP_Listener_config" path="/childflow"/>
+		<logger level="INFO" doc:name="Second Logger" doc:id="929d44d6-f3e3-4743-80f1-90631215ef38" message="Second  Logger" />
+	</flow>
+</mule>
