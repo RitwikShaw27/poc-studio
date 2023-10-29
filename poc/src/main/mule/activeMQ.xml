@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="activeMQFlow" doc:id="c033e69c-77bc-4929-95ab-20812c1e598e" >
+		<http:listener doc:name="Listener" doc:id="1144d2fd-a63a-4767-974d-48abe25d6e91" config-ref="HTTP_Listener_config" path="/activemq"/>
+		<set-payload value='#[{&#10;	"message": "This is activeMQ",&#10;	"author": "Ritwik Shaw"&#10;}]' doc:name="Set Payload" doc:id="003121c8-4dd7-403c-9805-443aed8122ac" />
+		<jms:publish doc:name="Publish" doc:id="31d73210-ba25-42ef-a6ec-b1dc4450f1e0" config-ref="JMS_Config" destination="muleTesting_Queue" persistentDelivery="true"/>
+	</flow>
+	<flow name="activeMQFlow1" doc:id="4f6153c2-c76d-4e68-8aaf-eb14c666a721" >
+		<http:listener doc:name="Listener" doc:id="26a8d206-99d5-4c6f-a0d2-205b74f8cfb0" config-ref="HTTP_Listener_config" path="/activemqreceive"/>
+		<jms:consume doc:name="Consume" doc:id="328de837-c707-4588-b84e-a41816c254cc" config-ref="JMS_Config" destination="muleTesting_Queue">
+			<jms:consumer-type >
+				<jms:queue-consumer />
+			</jms:consumer-type>
+		</jms:consume>
+		<ee:transform doc:name="Transform Message" doc:id="ce8ec78c-4c33-4df1-a145-ca81e79faa07" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+<!-- [STUDIO:"activeMQTopicDemo"]	<flow name="activeMQTopicDemo" doc:id="dbb4c8e7-6fe2-46f7-9a75-e527899cdd86" >
+		<jms:listener doc:name="On New Message" doc:id="3e658f84-3581-436d-a9e7-990df04f96ba" config-ref="JMS_Config" destination="DemoTopic" numberOfConsumers="1">
+			<jms:consumer-type >
+				<jms:topic-consumer />
+			</jms:consumer-type>
+		</jms:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="3e2955e6-88e6-47df-84da-7a5cd356a236" message="##### Message 1 from Subscriber 1 : #[payload&#93;"/>
+	</flow> [STUDIO] -->
+<!-- [STUDIO:"activeMQTopicDemo1"]	<flow name="activeMQTopicDemo1" doc:id="380ac944-e324-461d-bb35-b37576474fa4" >
+		<jms:listener doc:name="On New Message" doc:id="040a0c64-e534-43af-811e-06e255ff5569" config-ref="JMS_Config" destination="DemoTopic" numberOfConsumers="1" >
+			<jms:consumer-type >
+				<jms:topic-consumer />
+			</jms:consumer-type>
+		</jms:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="3d32309f-6225-4ba8-99d0-5f920fe3b43f" message="##### Message 1 from Subscriber 2 : #[payload&#93;" />
+	</flow> [STUDIO] -->
+</mule>

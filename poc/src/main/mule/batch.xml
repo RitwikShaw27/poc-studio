@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
 <!-- [STUDIO:"batchFlow"]	<flow name="batchFlow" doc:id="e7e4c429-d96a-42dc-9290-edca9d83df66" >
 		<http:listener doc:name="Listener" doc:id="dce90a7d-9a88-4542-922b-c596004a4f60" config-ref="HTTP_Listener_config" path="/batchpoc"/>
 		<set-payload value='#[[1,2,"a",4,5,"b","c",6&#93;&#93;' doc:name='[1,2,"a",4,5,"b","c",6&#93;' doc:id="1a5d1dd1-7c89-47f6-b0f7-130831330aa1" />
@@ -54,6 +55,58 @@ output application/json
 payload]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="batchFlow" doc:id="6eae8bcf-9295-41d8-9804-02e4fd0c0d41" >
+		<file:listener doc:name="On New or Updated File" doc:id="01847418-8582-4dd9-999c-b03a736f1b8a" config-ref="File_Config" directory="D:\MULESOFT\inputfile2" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="e3de6027-dd35-4ac1-ac4e-ca976a54bf55" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="826bd427-a2b8-42ff-9e30-4108e55e94d4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batchBatch_Job1" doc:id="a7e280a2-9d18-41e3-870a-ea543cee6592" >
+			<batch:process-records >
+				<batch:step name="Batch_Step2" doc:id="5f96e57c-34b4-4bdd-a32e-9c6fd0953fa2" >
+					<ee:transform doc:name="Transform Message" doc:id="8ce22211-4ba9-484f-bcd3-6689eb8d2e77" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	{
+		"Name": payload.Name,
+		"Age__c": payload.Age,
+		"Country__c": payload.Country,
+		"Email__c": payload.Email
+	}
+]]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+						</ee:variables>
+					</ee:transform>
+					<set-variable value="Employee__c" doc:name="ObjectName" doc:id="f3986da8-5d8d-497e-8a9c-615e2be5400a" variableName="ObjectName" />
+					<flow-ref doc:name="createReusableFlow" doc:id="de8c7333-035f-4a95-912b-8b579ddc2caf" name="createReusableFlow"/>
+					<ee:transform doc:name="Transform Message" doc:id="e78e82d8-1b65-4fe9-84d7-3317e53db8f2" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="d63723bb-319c-45e3-b9a9-78b89afcdcdd" message="COMPLETE"/>
 			</batch:on-complete>
 		</batch:job>
 	</flow>

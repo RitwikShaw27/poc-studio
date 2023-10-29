@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="forEachFlow" doc:id="02751a59-69da-4238-b111-c6417809d7b7" >
+		<http:listener doc:name="Listener" doc:id="3ff5edbe-186b-4f09-918f-4de0327cd50c" config-ref="HTTP_Listener_config" path="/foreach"/>
+		<foreach doc:name="For Each" doc:id="9ae9e20a-3b42-4dae-b9b8-0898b89f2a70" >
+			<flow-ref doc:name="Flow Reference" doc:id="0736d3e2-119a-4cc4-b7e8-7fd04346469b" name="forEachSub_Flow"/>
+		</foreach>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d1ff4a88-e5b4-4517-a827-db8c5a88a4e1" type="ANY">
+				<logger level="ERROR" doc:name="Logger" doc:id="a19b64a5-d2ec-49f6-83bd-fb50f72d02b6" message="####Error from For Each####"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="parallelForEachFlow" doc:id="b742f524-9b44-487d-bb67-69be0c70fced" >
+		<http:listener doc:name="Listener" doc:id="52daf3f5-0fd9-441a-991a-4138c5c0493a" config-ref="HTTP_Listener_config" path="/parallelforeach"/>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="ed7c9167-0b2e-4af4-b05f-beb43e753d03" >
+			<flow-ref doc:name="Flow Reference" doc:id="a33e2a40-347e-4eeb-b6df-abe8a0c389fa" name="forEachSub_Flow" />
+		</parallel-foreach>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8dddc40e-941e-434f-a6ca-d23b49df7e3c" type="MULE:COMPOSITE_ROUTING">
+				<logger level="ERROR" doc:name="Logger" doc:id="fa35b687-7ae4-4b76-b672-ad9974d4a31a" message="####Error from Parallel For Each####"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<sub-flow name="forEachSub_Flow" doc:id="33428f5c-2ec9-49cc-890f-5c12e4229512" >
+<!-- [STUDIO:"Logger"]		<logger level="INFO" doc:name="Logger" doc:id="d9de471d-502f-402e-9574-9c7fe2df4b1d" message="#[payload&#93;"/> [STUDIO] -->
+<!-- [STUDIO:"Transform Message"]		<ee:transform doc:name="Transform Message" doc:id="09661ece-aeb7-45b7-ab66-a1fa87c4e96a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::Runtime
+output application/json
+&#45;&#45;-
+{
+}wait(5000)&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform> [STUDIO] -->
+		<choice doc:name="Choice" doc:id="2d0e031d-d445-4e53-9c10-1a619840a11b" >
+			<when expression='#[payload.username == "John"]'>
+				<raise-error doc:name="Raise error" doc:id="569e32c2-5f1b-4f39-986e-46356fe06d8c" type="CUSTOM:ROUTING"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="2f06d124-4e07-4642-9b03-8afb73ca3247" message="#[payload]"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

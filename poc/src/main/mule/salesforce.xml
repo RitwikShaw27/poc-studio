@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<flow name="salesforceFlow" doc:id="d360dcb7-5d5a-4bc3-8ca7-fcfc89a54219" >
+		<http:listener doc:name="Listener" doc:id="c42936b6-693a-4528-aadf-7b3875c4e66d" config-ref="HTTP_Listener_config" path="/salesforce"/>
+		<db:select doc:name="Select" doc:id="54cd6180-0db0-45c0-abbd-bc70d27a595b" config-ref="Database_ConfigSalesforceMigration">
+			<db:sql ><![CDATA[SELECT * FROM contacts;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="b6212fc0-d29f-4075-bc81-20b81b142dd3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(item, index) ->{
+	FirstName: item.FirstName,
+	LastName: item.LastName,
+	Email: item.Email,
+	Company: item.Company
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="770cff37-9421-47f4-932b-9e9338ad2f8e" >
+			<salesforce:create doc:name="Create" doc:id="8d705d59-ced7-4958-b829-86edaac7e949" config-ref="Salesforce_Config" type="Lead" >
+				<salesforce:records ><![CDATA[#[[payload]]]]></salesforce:records>
+			</salesforce:create>
+		</foreach>
+	</flow>
+	<flow name="GETsalesforcemembermemberid" doc:id="328fbe7b-67a8-414a-aaec-e4e89c7317b9" >
+		<http:listener doc:name="Listener" doc:id="4b634a4a-a6f3-4e29-9d52-a405ab88f9b8" config-ref="HTTP_Listener_config" path="/member" allowedMethods="GET"/>
+		<ee:transform doc:name="Transform Message" doc:id="eea499e4-d4d0-47fa-b100-4def785d59d3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[
+"SELECT Name,name__c,gender__c,email__c,phone__c FROM Member__c WHERE Name =':memberId'"]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="condition" ><![CDATA[%dw 2.0
+output application/json
+---
+attributes.queryParams]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="9b435099-4e85-4989-b38c-be00261d1c65" name="queryReusableFlow"/>
+<!-- [STUDIO:"Select particular member"]		<salesforce:query doc:name="Select particular member" doc:id="c1734a2d-a6a2-4543-881a-278396709872" config-ref="Salesforce_Config" >
+			<salesforce:salesforce-query ><![CDATA[SELECT Name,name__c,gender__c,email__c,phone__c FROM Member__c WHERE Name =':memberId'&#93;&#93;></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	memberId : attributes.queryParams.memberId
+}&#93;&#93;&#93;></salesforce:parameters>
+		</salesforce:query> [STUDIO] -->
+		<ee:transform doc:name="Map salesforce data" doc:id="a60cbc35-5f3e-4e12-8808-453db5d308f1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((item, index) -> {
+	"memberId":item.Name,
+	"name":item.name__c,
+	"gender":item.gender__c,
+	"mail":item.email__c,
+	"phone":item.phone__c
+	
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="POSTsalesforcemember" doc:id="dd494284-2dc5-46e2-b419-19ba2e7a0d0f" >
+		<http:listener doc:name="Listener" doc:id="1a01673e-ffb1-4c7b-82ec-5518b5c39462" config-ref="HTTP_Listener_config" path="/salesforce/member" allowedMethods="POST"/>
+		<set-payload value="#[[payload]]" doc:name="Object to Array" doc:id="0d019f99-9de1-421b-987f-3e4c10115095" />
+		<ee:transform doc:name="User payload to Salesforce data" doc:id="2918f643-16da-409b-a34d-e2c9705b50ad" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((payload, index) -> {
+	
+	"name__c":payload.name,
+	"gender__c":payload.gender,
+	"email__c":payload.mail,
+	"phone__c":payload.phone
+	
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"email": payload[0].email__c&#10;}]' doc:name="condition" doc:id="8b901067-16c1-4d5a-81b1-4188bd9d04f3" variableName="condition" />
+<!-- [STUDIO:"Add new field to member object"]		<salesforce:create type="Member__c" doc:name="Add new field to member object" doc:id="e47fca1e-ed07-4989-b470-14bf825cb93c" config-ref="Salesforce_Config" /> [STUDIO] -->
+		<set-variable value="Member__c" doc:name="ObjectName" doc:id="64792da8-2c15-4ecc-9d3c-4f112b49f8ab" variableName="ObjectName"/>
+		<flow-ref doc:name="createReusableFlow" doc:id="ff11103f-13b8-42bc-8087-ab2d6dba2e95" name="createReusableFlow"/>
+		<choice doc:name="Choice" doc:id="97a9189a-12d7-4d73-b96f-41ffb62d0067" >
+			<when expression="#[payload.successful == false]" >
+				<ee:transform doc:name="Error response" doc:id="d1a33a9c-fdd1-4ca2-9860-73429cfd47da" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "You are already a member !"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+<!-- [STUDIO:"Query"]				<salesforce:query doc:name="Query" doc:id="40583d7e-d662-454a-8ac9-20b8f2614513" config-ref="Salesforce_Config" >
+					<salesforce:salesforce-query ><![CDATA[SELECT Name FROM Member__c WHERE email__c = ':email'&#93;&#93;></salesforce:salesforce-query>
+					<salesforce:parameters ><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	email : vars.email
+}&#93;&#93;&#93;></salesforce:parameters>
+				</salesforce:query> [STUDIO] -->
+				<ee:transform doc:name="Transform Message" doc:id="057fbfd8-bb7d-413c-89ed-7812891fd66d">
+					<ee:message>
+						<ee:set-payload><![CDATA["SELECT Name FROM Member__c WHERE email__c = ':email'"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="queryReusableFlow" doc:id="6828637a-70ce-43ff-af4e-6bec7428915d" name="queryReusableFlow"/>
+				<ee:transform doc:name="Success response" doc:id="9cbe91b8-651e-44e6-904d-fb69412405fa" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"submitted successfully",
+	"memberId": payload[0].Name
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="salesforceFlow1" doc:id="b3046850-6d8c-44c7-a9e1-3b9dc0979112" >
+		<file:listener doc:name="On New or Updated File" doc:id="efa71e90-c4a3-4b0e-a15a-40a7576ab513" config-ref="File_Config" directory="D:\MULESOFT\InputFile" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="20" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="ff68fc07-1a60-4589-9d35-5db8e6929920">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map (items, index) -> {
+	firstName: items.FirstName,
+	LastName: items.LastName,
+	Email: items.Email,
+	Phone: items.Phone
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="Contact" doc:name="ObjectName" doc:id="db28dac8-1ebf-4887-9ea2-3774805ec995" variableName="ObjectName"/>
+		<flow-ref doc:name="createReusableFlow" doc:id="6997b8e7-d8d1-4f5f-82c9-e8bec3a00526" name="createReusableFlow"/>
+<!-- [STUDIO:"Create"]		<salesforce:create type="Contact" doc:name="Create" doc:id="cb8477a8-19c9-4f58-997b-2eca1dc81fb7" config-ref="Salesforce_Config"/> [STUDIO] -->
+		<logger level="INFO" doc:name="Logger" doc:id="b0f83b2c-a96a-4196-a59d-bc9c17a6395c" message="Fields in the file inserted in Contacts object"/>
+		<ee:transform doc:name="Transform Message" doc:id="e9a3df2e-a995-4dd9-bf2a-574c6be54792" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="2ee42322-feb8-4d7e-9dbb-c5f13e569df5" config-ref="File_Config" path="D:\MULESOFT\OutputFile\test.json"/>
+	</flow>
+</mule>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="transactionManagementFlow" doc:id="bead7894-4159-428e-8a1a-4193e63f9a9a" >
+		<http:listener doc:name="Listener" doc:id="0f1dd3f4-05a1-47e2-98a3-d5b8e428a44f" config-ref="HTTP_Listener_config" path="/transaction"/>
+		<try doc:name="Try" doc:id="74b7d60d-6e7f-443c-8e73-8b115dc86604" transactionalAction="ALWAYS_BEGIN">
+			<db:select doc:name="Select" doc:id="2359de2b-9e83-428e-b9ab-4401be65aa0f" config-ref="Database_Config">
+				<db:sql ><![CDATA[SELECT * from bankdetails where custid = :custid]]></db:sql>
+				<db:input-parameters ><![CDATA[#[{
+	custid: attributes.queryParams.custid
+}]]]></db:input-parameters>
+			</db:select>
+			<ee:transform doc:name="Transform Message" doc:id="7d4813a8-789b-4b0a-8a7c-68eb0732467b" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"custId" : payload.custId[0],
+	"custname" : payload.custname[0],
+	"accno" : payload.accno[0],
+	"balance" : payload.balance[0]
+	
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<db:insert doc:name="Insert" doc:id="89516f89-e6ce-4ca7-9912-d21c075f03b4" config-ref="Database_Config">
+				<db:sql ><![CDATA[Insert into newmigratedbankdetails(custId, custname, accno, balance) values (:custId, :custname, :accno, :balance) ]]></db:sql>
+				<db:input-parameters ><![CDATA[#[{
+	custId: payload.custId, 
+	custname: payload.custname, 
+	accno: payload.accno, 
+	balance: payload.balance
+	
+}]]]></db:input-parameters>
+			</db:insert>
+			<ee:transform doc:name="Transform Message" doc:id="7c2bb9ad-bd60-46f8-8f91-a3be23f5b326" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "Customer details inserted into new table"
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<raise-error doc:name="Raise error" doc:id="a3d18a79-9d72-4f5f-b041-abe9693da5e0" type="DATA:INVALID_DETAILS" description="invalid bank details"/>
+		</try>
+	</flow>
+</mule>

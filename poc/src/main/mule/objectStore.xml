@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="objectStoreFlow" doc:id="729a373a-f324-4038-9e90-bafaf0857ce7" >
+		<http:listener doc:name="Listener" doc:id="16fe855d-574d-4c74-b854-d9b599b1b046" config-ref="HTTP_Listener_config" path="/objectstore"/>
+		<os:store doc:name="Store" doc:id="52d5b2a8-a8d4-4759-a648-d9f348bfc01f" key='#[now() as String {format: "yyyyMMddHHmmss"}]' objectStore="test_os"/>
+	</flow>
+	<flow name="objectStoreRetrieveAll" doc:id="b2f1c46c-f362-4a23-8524-ec2ead85b926" >
+		<http:listener doc:name="Listener" doc:id="4c396b32-e5a0-4576-8710-9f71db9c761f" config-ref="HTTP_Listener_config" path="/retrieveall"/>
+		<os:retrieve-all doc:name="Retrieve all" doc:id="62191510-b0e6-4a2d-bab7-6dab11e26f80" objectStore="test_os"/>
+	</flow>
+	<flow name="objectStoreFlow1" doc:id="9ebd893c-37a8-4b00-bb90-a50a40cbe10c" >
+		<http:listener doc:name="Listener" doc:id="ef7a4011-a56c-4fec-b38e-bbea0798e220" config-ref="HTTP_Listener_config" path="/clear"/>
+		<os:clear doc:name="Clear" doc:id="b881f677-19a6-4ec3-ac3b-c839a4ac912d" objectStore="test_os"/>
+	</flow>
+	<flow name="objectStoreRetrieveAllKeys" doc:id="e0686cdf-df3e-44d8-b49a-a181b3717f8c" >
+		<http:listener doc:name="Listener" doc:id="8e6c118f-16bb-47e6-af30-dca3369a4610" config-ref="HTTP_Listener_config" path="/retrievekeys" />
+		<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="aca3f9c2-7b9e-48c9-970b-0a0f46d6d9c7" objectStore="test_os"/>
+		<foreach doc:name="For Each" doc:id="5094d0dc-abaa-4c00-a4a9-a4b204451502" >
+			<set-variable value="#[payload]" doc:name="Set Variable" doc:id="3b5e5b63-7582-4e3b-ba30-92c0f887dc65" variableName="vKeys"/>
+			<os:retrieve doc:name="Retrieve" doc:id="527e3b8e-8b2f-4f1f-81b4-fc0589e781dd" key="#[vars.vKeys]" objectStore="test_os"/>
+			<logger level="INFO" doc:name="Logger" doc:id="443c3587-40fe-42dc-ae30-f9f61bc5edd0" message="#[payload]"/>
+			<os:remove doc:name="Remove" doc:id="83c63e8d-9a60-464d-9ffd-c9e420bc88b6" key="#[vars.vKeys]" objectStore="test_os"/>
+		</foreach>
+	</flow>
+</mule>

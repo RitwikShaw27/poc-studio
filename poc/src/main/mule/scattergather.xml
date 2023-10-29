@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<!-- [STUDIO:"On Error Continue"]<?xml version="1.0" encoding="UTF-8"?> [STUDIO] -->
 
 <mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
 	xmlns:http="http://www.mulesoft.org/schema/mule/http"
@@ -13,10 +13,22 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 				<set-variable value="#[2000]" doc:name="Indigo" doc:id="a458fd7c-ff83-4c43-a6e4-3245510e4e6e" variableName="flightrate"/>
 			</route>
 			<route >
-				<set-variable value="#[2000]" doc:name="Spice" doc:id="c43e40a2-d627-4f3b-8577-6a2d26c11dca" variableName="flightrate"/>
+				<set-variable value="#[3000]" doc:name="Spice" doc:id="c43e40a2-d627-4f3b-8577-6a2d26c11dca" variableName="flightrate"/>
 			</route>
 			<route >
-				<set-variable value="#[7000]" doc:name="Airindia" doc:id="53b9473c-cf7e-4344-8937-7d4eae13b69f" variableName="flightrate"/>
+				<set-variable value="#[1000]" doc:name="Vistara" doc:id="ad6526c1-8139-4f38-b86f-4d75d362e68f" variableName="flightrate" />
+<!-- [STUDIO:"Raise error"]				<raise-error doc:name="Raise error" doc:id="b9c206f4-d764-4f2c-bc52-8d5cd4bbcbfd" type="DATA:INVALID_DETAILS" description="Invalid flight rate" /> [STUDIO] -->
+			</route>
+			<route >
+				<try doc:name="Try" doc:id="0e26d0f1-e3e9-4630-84e2-73ec0b3a4726">
+					<set-variable value="#[7000]" doc:name="Airindia" doc:id="53b9473c-cf7e-4344-8937-7d4eae13b69f" variableName="flightrate" />
+					<raise-error doc:name="Raise error" doc:id="909a4deb-4022-408b-a8a1-f341b1a53cbd" type="DATA:INVALID_DETAILS" description="Invalid flight rate" />
+					<error-handler>
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="756ce227-344f-4f1d-81ef-daf33c182846">
+							<logger level="INFO" doc:name="Logger" doc:id="72dca4ca-34bb-4151-9b15-c65c2f2c14fd" message='#["Error is encountered"]' />
+						</on-error-continue>
+					</error-handler>
+				</try>
 			</route>
 		</scatter-gather>
 		<ee:transform doc:name="Transform Message" doc:id="ef922b0c-1f60-4aef-9ddf-96afa1b76f98">
@@ -24,31 +36,54 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-vars.flightrate]]></ee:set-payload>
+vars.flightrate
+]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
 	</flow>
 	<flow name="scatter-gather-main-flow" doc:id="62f990df-8462-446b-a3be-90daf5bb5f54" >
 		<http:listener doc:name="Listener" doc:id="aaba8f01-a1d4-42f0-9871-cbfb1ba58cf8" path="/getFlightRates" config-ref="HTTP_Listener_config"/>
+		<set-variable value="#[attributes.queryParams]" doc:name="Set Variable" doc:id="791e8bef-97bf-431e-bb6a-fe2ff32da304" variableName="condition"/>
 		<scatter-gather doc:name="Scatter-Gather" doc:id="65b319bb-913f-4c69-8dcb-abe33f7fed67" >
 			<route >
 				<flow-ref doc:name="flow-ref-vistara" doc:id="8685f8a1-6ec5-44a4-af1e-cdd8fd3cc5f4" name="call-vistara"/>
 			</route>
 			<route >
-				<flow-ref doc:name="flow-ref-spicejet" doc:id="080d17c0-ae11-42b3-aba1-c6ea63cecc2e" name="call-spice"/>
+				<flow-ref doc:name="flow-ref-spice" doc:id="080d17c0-ae11-42b3-aba1-c6ea63cecc2e" name="call-spice"/>
 			</route>
 			<route >
 				<flow-ref doc:name="flow-ref-indigo" doc:id="8c7b0097-0db0-42c4-9cee-f7cccb9e17f9" name="call-indigo"/>
 			</route>
 		</scatter-gather>
-		<ee:transform doc:name="Transform Message" doc:id="6f59b1f0-a55d-427f-8520-ed82ee38b2a1" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+		<choice doc:name="Choice" doc:id="d6b1ad8e-1076-4ed9-9836-471e629177e4" >
+			<when expression="#[(((flatten(payload..payload)) &#10;	filter ($.Source == vars.condition.source and $.Destination == vars.condition.destination)&#10;) orderBy ($.Price)) == []]">
+				<ee:transform doc:name="Transform Message" doc:id="72553c28-8261-4ac9-a699-a1f873502014" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-flatten(payload..payload)]]></ee:set-payload>
+{
+	"message" : "There are no flights between " ++ vars.condition.source ++ " and " ++ vars.condition.destination
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="6f59b1f0-a55d-427f-8520-ed82ee38b2a1">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+	
+(((flatten(payload..payload)) 
+	filter ($.Source == vars.condition.source and $.Destination == vars.condition.destination)
+) orderBy ($.Price))
+	
+]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+			</otherwise>
+		</choice>
 	</flow>
 	<flow name="call-indigo" doc:id="c73c8590-12c5-4109-b6d9-c69d60be5854" >
 		<file:read doc:name="Read" doc:id="f114b373-72de-46bb-b603-36048ba39585" path="C:\Users\RITWIK SHAW\Desktop\Extension\IndigoRates.json"/>

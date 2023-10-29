@@ -21,4 +21,22 @@ payload]]]></http:body>
 		<http:listener doc:name="Listener" doc:id="8bd085c7-3f82-4cf5-afe7-9cf12db6aeaa" config-ref="HTTP_Listener_config" path="/childflow"/>
 		<logger level="INFO" doc:name="Second Logger" doc:id="929d44d6-f3e3-4743-80f1-90631215ef38" message="Second  Logger" />
 	</flow>
+	<flow name="mainFlow" doc:id="27601e76-038b-48a1-b67b-7de17367deaa" >
+		<http:listener doc:name="Listener" doc:id="6aef68b7-a852-4c48-9486-dad749156b39" config-ref="HTTP_Listener_config" path="/mainflow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="58787d98-32b8-4d1c-b123-8083125663e0" />
+		<flow-ref doc:name="subFlow" doc:id="dd7afb8e-f42c-4b96-a7e4-63a29c92da1e" name="subFlow"/>
+		<flow-ref doc:name="privateFlow" doc:id="bf0c46ee-c47d-4a24-95ec-5975296a2fc2" name="privateFlow"/>
+		<async doc:name="Async" doc:id="7d1cf291-872e-4483-9853-10dfbcda8f8a" >
+			<flow-ref doc:name="asyncFlow" doc:id="e2f89f99-a103-4cc1-b26e-8207c5c1783d" name="asyncFlow"/>
+		</async>
+	</flow>
+	<sub-flow name="subFlow" doc:id="9b8061a2-5b5e-469f-8d32-b90168c2ba37" >
+		<logger level="INFO" doc:name="Logger" doc:id="6c4f4e42-19d0-4ec2-80dd-f6a46e5b8a38" message='"inside sub flow"'/>
+	</sub-flow>
+	<flow name="privateFlow" doc:id="b21203b1-483c-468c-8909-d6ee19aadbfb" >
+		<logger level="INFO" doc:name="Logger" doc:id="301a78f4-f425-4d3e-8ac0-03f983ccce8c" message='"Inside Private flow"'/>
+	</flow>
+	<flow name="asyncFlow" doc:id="8cbd2764-fce2-4d30-8d7b-1f6243db5592" >
+		<logger level="INFO" doc:name="Logger" doc:id="be0b1850-522e-4c0c-9df4-d401b14fdfa1" message='"inside async private flow"'/>
+	</flow>
 </mule>

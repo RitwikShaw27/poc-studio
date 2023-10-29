@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="createReusableFlow" doc:id="58db6b33-4a83-40e3-84af-95bfc10a045c" >
+		<salesforce:create type="#[vars.ObjectName]" doc:name="" doc:id="81f4b147-f853-4e38-a051-2db866439121" config-ref="Salesforce_Config" />
+	</flow>
+	<flow name="queryReusableFlow" doc:id="effa9939-30e4-4433-bdff-bf099d5acf0a" >
+		<salesforce:query doc:name="" doc:id="956e37f3-06f9-404b-9e9b-08162defc1b0" config-ref="Salesforce_Config" >
+			<salesforce:salesforce-query ><![CDATA[#[payload]]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+vars.condition]]]></salesforce:parameters>
+		</salesforce:query>
+	</flow>
+</mule>
