@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 <!-- [STUDIO:"batchFlow"]	<flow name="batchFlow" doc:id="e7e4c429-d96a-42dc-9290-edca9d83df66" >
 		<http:listener doc:name="Listener" doc:id="dce90a7d-9a88-4542-922b-c596004a4f60" config-ref="HTTP_Listener_config" path="/batchpoc"/>
 		<set-payload value='#[[1,2,"a",4,5,"b","c",6&#93;&#93;' doc:name='[1,2,"a",4,5,"b","c",6&#93;' doc:id="1a5d1dd1-7c89-47f6-b0f7-130831330aa1" />
@@ -75,34 +76,50 @@ payload]]></ee:set-payload>
 		</ee:transform>
 		<batch:job jobName="batchBatch_Job1" doc:id="a7e280a2-9d18-41e3-870a-ea543cee6592" >
 			<batch:process-records >
-				<batch:step name="Batch_Step2" doc:id="5f96e57c-34b4-4bdd-a32e-9c6fd0953fa2" >
-					<ee:transform doc:name="Transform Message" doc:id="8ce22211-4ba9-484f-bcd3-6689eb8d2e77" >
-						<ee:message >
-							<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+				<batch:step name="Batch_Step2" doc:id="5f96e57c-34b4-4bdd-a32e-9c6fd0953fa2" acceptExpression='payload.Status == " active"'>
+					<ee:transform doc:name="Transform Message" doc:id="8ce22211-4ba9-484f-bcd3-6689eb8d2e77">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ---
-[
-	{
-		"Name": payload.Name,
-		"Age__c": payload.Age,
-		"Country__c": payload.Country,
-		"Email__c": payload.Email
-	}
-]]]></ee:set-payload>
+{
+	"Name": payload.Name,
+	"Age__c": payload.Age,
+	"Country__c": payload.Country,
+	"Email__c": payload.Email,
+	"Status__c": payload.Status
+}
+]]></ee:set-payload>
 						</ee:message>
-						<ee:variables >
+						<ee:variables>
 						</ee:variables>
 					</ee:transform>
-					<set-variable value="Employee__c" doc:name="ObjectName" doc:id="f3986da8-5d8d-497e-8a9c-615e2be5400a" variableName="ObjectName" />
-					<flow-ref doc:name="createReusableFlow" doc:id="de8c7333-035f-4a95-912b-8b579ddc2caf" name="createReusableFlow"/>
-					<ee:transform doc:name="Transform Message" doc:id="e78e82d8-1b65-4fe9-84d7-3317e53db8f2" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="8517dab8-aa80-4f13-a0e8-4c2b215759e3" size="5">
+						<salesforce:create doc:name="Create" doc:id="f54c3742-0ccd-4f5b-abed-a28a872749f9" config-ref="Salesforce_Config" type="Employee__c"/>
+						<ee:transform doc:name="Transform Message" doc:id="2f8d0887-6996-41a9-935f-7d13b34a64c7" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="ab637fb3-2c79-4d47-9660-25d4d34fe269" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]"/>
+					</batch:aggregator>
+					<logger level="INFO" doc:name="Logger" doc:id="2a40685d-0992-4a7d-8814-3091e10ca2f3" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]"/>
+				</batch:step>
+				<batch:step name="Batch_Step3" doc:id="693d7a76-4691-4f39-81e7-2f59b82157dc" acceptExpression='payload.Status == " inactive"'>
+					<logger level="INFO" doc:name="Logger" doc:id="89aade28-f7ee-4ef3-9e86-66bd9d574f97" message="Write to FILE START"/>
+					<ee:transform doc:name="Transform Message" doc:id="066c5c5d-3d4f-4ec8-a857-282c9974d80c" >
 						<ee:message >
 							<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
+output application/csv
 ---
 payload]]></ee:set-payload>
 						</ee:message>
 					</ee:transform>
+					<file:write doc:name="Write" doc:id="7d92cd59-eaab-4616-b902-cca069265987" config-ref="File_Config" path="D:\MULESOFT\OutputFile\inactive.csv" mode="APPEND"/>
+					<logger level="INFO" doc:name="Logger" doc:id="f9ae5e64-6f4f-491e-bef1-682ce9bf6a1a" message="Write to FILE END"/>
 				</batch:step>
 			</batch:process-records>
 			<batch:on-complete >

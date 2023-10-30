@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd">
+	<flow name="correlationIdFlow" doc:id="fdd70c41-ff9a-41ec-9f31-6141e1967286" >
+		<http:listener doc:name="Listener" doc:id="1786443f-c51b-4200-a1df-d619d306ff68" config-ref="HTTP_Listener_config" path="/tracing"/>
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="d41d38d0-11d8-4420-90f5-321e868e687f" correlationId="#[payload.orderNumber]">
+			<logger level="INFO" doc:name="Logger" doc:id="25061dea-56f6-4fdc-b384-955b9767ddfc" message="ID generated from with correlationID scope" />
+		</tracing:with-correlation-id>
+		<logger level="INFO" doc:name="Logger" doc:id="1abaf07e-0144-4555-a307-0afababe2a5a" message="ID generated from Postman Header"/>
+	</flow>
+</mule>
